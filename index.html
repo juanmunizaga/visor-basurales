@@ -1,37 +1,237 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Visor Basurales</title>
+
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Estilos básicos del layout -->
   <style>
-    #map { height: 100vh; }
+    :root{
+      --topbar-h: 56px;
+      --sidebar-w: 280px;
+      --rightbar-w: 280px;
+      --brand: #2c3e50;
+      --brand-2: #34495e;
+      --panel: #ecf0f1;
+      --text: #2c3e50;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: system-ui, Arial, sans-serif; color: var(--text); }
+
+    /* Barra superior */
+    #topbar{
+      position: fixed; inset: 0 0 auto 0; height: var(--topbar-h);
+      background: linear-gradient(180deg, var(--brand), var(--brand-2));
+      color: #fff; display: flex; align-items: center; gap: 12px;
+      padding: 0 14px; z-index: 1002;
+      box-shadow: 0 1px 6px rgba(0,0,0,.2);
+    }
+    #topbar img{ height: 30px; width: auto; }
+    #topbar .title{ font-weight: 700; letter-spacing: .2px; }
+
+    /* Panel izquierdo */
+    #sidebar{
+      position: fixed;
+      top: var(--topbar-h); left: 0; bottom: 0; width: var(--sidebar-w);
+      background: var(--panel); overflow: auto; padding: 14px 14px 18px;
+      border-right: 1px solid #d0d7de; z-index: 1001;
+    }
+    #sidebar h3{ margin: 8px 0 6px; }
+    #sidebar .section{ margin-bottom: 12px; }
+    #sidebar small{ color:#6b7280; }
+
+    /* Botón para abrir/cerrar fotos */
+    #toggleRight{
+      position: fixed; top: calc(var(--topbar-h) + 10px);
+      right: calc(var(--rightbar-w) + 14px);
+      z-index: 1003; border: 0; padding: 8px 12px; border-radius: 8px;
+      background: #3498db; color:#fff; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+
+    /* Panel derecho (fotos) */
+    #rightbar{
+      position: fixed;
+      top: var(--topbar-h); right: 0; bottom: 0; width: var(--rightbar-w);
+      background: var(--panel); overflow: auto; padding: 14px;
+      border-left: 1px solid #d0d7de; z-index: 1001;
+      transform: translateX(0); transition: transform .25s ease;
+    }
+    body.right-hidden #rightbar{ transform: translateX(100%); }
+    body.right-hidden #toggleRight{ right: 14px; }
+
+    /* Contenedor del mapa */
+    #map{
+      position: fixed;
+      top: var(--topbar-h);
+      left: var(--sidebar-w);
+      right: var(--rightbar-w);
+      bottom: 0;
+    }
+    body.right-hidden #map{ right: 0; }
+
+    /* Tarjetas de fotos */
+    .card{
+      background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 12px;
+    }
+    .card img{ display:block; width:100%; height:auto; }
+    .card .caption{ padding:8px 10px; font-size: .95rem; }
+
+    /* Tabla de atributos en popup */
+    .attr-table{ border-collapse: collapse; font-size: 12px; }
+    .attr-table td{ border:1px solid #e5e7eb; padding:4px 6px; vertical-align: top; }
+    .attr-table td.key{ background:#f5f5f5; font-weight: 600; white-space:nowrap; }
+
+    /* Responsivo */
+    @media (max-width: 980px){
+      :root{ --sidebar-w: 220px; --rightbar-w: 240px; }
+    }
+    @media (max-width: 740px){
+      #sidebar{ width: 70vw; }
+      #map{ left: 70vw; }
+      :root{ --rightbar-w: 70vw; }
+    }
   </style>
 </head>
-<body>
+<body class="right-hidden">
+  <!-- Barra superior -->
+  <div id="topbar">
+    <img src="img/logo.png" alt="Logo" onerror="this.style.display='none'">
+    <div class="title">Visor de Basurales</div>
+  </div>
+
+  <!-- Panel izquierdo: info/leyenda/controles -->
+  <aside id="sidebar">
+    <div class="section">
+      <h3>Descripción</h3>
+      <p>Visor público de <b>basurales</b> (datos de QGIS). Haga clic en un punto/polígono para ver sus atributos.</p>
+      <small>Actualiza tu texto aquí: fuente, fecha, contacto, etc.</small>
+    </div>
+
+    <div class="section">
+      <h3>Leyenda</h3>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#e11d48;border:1px solid #991b1b;"></span>
+        <span>Punto de basural</span>
+      </div>
+      <!-- Agrega más ítems si tienes varias capas -->
+    </div>
+
+    <div class="section">
+      <h3>Controles</h3>
+      <p>
+        <button id="fitBtn" style="padding:6px 10px;border-radius:8px;border:1px solid #d0d7de;background:#fff;cursor:pointer;">
+          Enfocar capa
+        </button>
+      </p>
+      <small>Tip: “Enfocar capa” ajusta el zoom a la extensión del GeoJSON.</small>
+    </div>
+  </aside>
+
+  <!-- Botón para abrir/cerrar panel de fotos -->
+  <button id="toggleRight" title="Mostrar/Ocultar fotos">📷 Fotos</button>
+
+  <!-- Panel derecho: fotos (puedes reemplazar rutas y textos) -->
+  <aside id="rightbar">
+    <h3 style="margin:8px 0 10px;">Galería</h3>
+    <div class="card">
+      <img src="img/foto1.jpg" alt="Foto 1" onerror="this.style.display='none'">
+      <div class="caption">Ejemplo 1 — reemplaza por tu imagen en <code>img/</code>.</div>
+    </div>
+    <div class="card">
+      <img src="img/foto2.jpg" alt="Foto 2" onerror="this.style.display='none'">
+      <div class="caption">Ejemplo 2 — agrega más tarjetas según necesites.</div>
+    </div>
+  </aside>
+
+  <!-- Mapa -->
   <div id="map"></div>
 
+  <!-- Lógica del visor -->
   <script>
-    // Inicializar mapa
-    var map = L.map('map').setView([-36.8, -73.0], 11);
+    // 1) Inicializar mapa
+    const map = L.map('map', { zoomControl: true }).setView([-36.8, -73.0], 11);
 
-    // Capa base OSM
+    // 2) Capa base OSM
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 20,
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
-    // 👇 Aquí pegas tu bloque para cargar BASURALES.geojson
+    // 3) Utilidad: crear HTML de popup con todos los atributos
+    function popupFromProps(props){
+      if(!props) return '<em>Sin atributos</em>';
+      const rows = Object.keys(props).map(k=>{
+        let v = props[k];
+        if (v === null || v === undefined) v = '';
+        return `<tr><td class="key">${k}</td><td>${String(v)}</td></tr>`;
+      }).join('');
+      return `<table class="attr-table">${rows}</table>`;
+    }
+
+    // 4) Cargar el GeoJSON exportado desde QGIS
+    let geoLayer = null;
     fetch('BASURALES.geojson')
-      .then(r => r.json())
+      .then(r => {
+        if(!r.ok) throw new Error('No se pudo cargar BASURALES.geojson');
+        return r.json();
+      })
       .then(data => {
-        L.geoJSON(data, {
+        geoLayer = L.geoJSON(data, {
+          pointToLayer: (feature, latlng) => {
+            // estilo de puntos (ajusta colores/tamaño a tu gusto)
+            return L.circleMarker(latlng, {
+              radius: 6,
+              fillColor: '#e11d48',
+              color: '#991b1b',
+              weight: 1,
+              opacity: 1,
+              fillOpacity: 0.85
+            });
+          },
           onEachFeature: function (feature, layer) {
-            // Cambia "nombre" por el atributo que realmente tengas en tu GeoJSON
-            layer.bindPopup("Nombre: " + feature.properties.nombre);
+            layer.bindPopup(popupFromProps(feature.properties));
+          },
+          style: function(){
+            // estilo de polígonos/líneas si las hubiera
+            return { color: '#e11d48', weight: 2, fillOpacity: 0.2 };
           }
         }).addTo(map);
+
+        // Ajustar extensión al cargar
+        try {
+          const b = geoLayer.getBounds();
+          if (b.isValid()) map.fitBounds(b, { padding: [20,20] });
+        } catch(e){ /* no-op */ }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('No se pudo cargar BASURALES.geojson. Revisa el nombre/ubicación del archivo.');
       });
+
+    // 5) Botón "Enfocar capa"
+    document.getElementById('fitBtn').addEventListener('click', ()=>{
+      if(geoLayer){
+        const b = geoLayer.getBounds();
+        if (b && b.isValid()) map.fitBounds(b, { padding: [20,20] });
+      }
+    });
+
+    // 6) Mostrar/ocultar panel derecho (fotos)
+    document.getElementById('toggleRight').addEventListener('click', ()=>{
+      document.body.classList.toggle('right-hidden');
+      // Disparar un resize para que Leaflet recalibre el mapa al cambiar el layout
+      setTimeout(()=>{ map.invalidateSize(); }, 260);
+    });
+
+    // 7) Recalibrar mapa si cambia el tamaño de ventana
+    window.addEventListener('resize', ()=>{ map.invalidateSize(); });
   </script>
 </body>
 </html>
