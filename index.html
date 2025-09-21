@@ -54,16 +54,20 @@
       box-shadow: 0 2px 8px rgba(0,0,0,.15);
     }
 
-    /* Panel derecho (fotos) */
-    #rightbar{
-      position: fixed;
-      top: var(--topbar-h); right: 0; bottom: 0; width: var(--rightbar-w);
-      background: var(--panel); overflow: auto; padding: 14px;
-      border-left: 1px solid #d0d7de; z-index: 1001;
-      transform: translateX(0); transition: transform .25s ease;
-    }
-    body.right-hidden #rightbar{ transform: translateX(100%); }
-    body.right-hidden #toggleRight{ right: 14px; }
+    <!-- Panel derecho: fotos -->
+<aside id="rightbar">
+  <h3 style="margin:8px 0 10px;">Galería de Basurales</h3>
+
+  <div class="card">
+    <img src="img/BM.jpeg" alt="Basural BM">
+    <div class="caption">Basural BM</div>
+  </div>
+
+  <div class="card">
+    <img src="img/JUNQUILLAR.jpeg" alt="Basural Junquillar">
+    <div class="caption">Basural Junquillar</div>
+  </div>
+</aside>
 
     /* Contenedor del mapa */
     #map{
