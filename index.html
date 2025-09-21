@@ -157,14 +157,28 @@
   <!-- Lógica del visor -->
   <script>
     // 1) Inicializar mapa
-    const map = L.map('map', { zoomControl: true }).setView([-36.8, -73.0], 11);
+const map = L.map('map', { zoomControl: true }).setView([-36.8, -73.0], 11);
 
-    // 2) Capa base OSM
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 20,
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
+// 2) Capas base
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 20,
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map); // añadimos OSM al inicio
 
+const satelite = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  {
+    maxZoom: 20,
+    attribution: 'Tiles © Esri &mdash; Source: Esri, USGS, NOAA'
+  }
+);
+
+// 3) Control de capas (arriba a la derecha)
+L.control.layers(
+  { "OpenStreetMap": osm, "Satélite": satelite }, // capas base
+  {}                                              // aquí podrías poner overlays
+).addTo(map);
+    
     // 3) Utilidad: popup con todos los atributos
     function popupFromProps(props){
       if(!props) return '<em>Sin atributos</em>';
