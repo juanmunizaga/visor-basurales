@@ -54,20 +54,16 @@
       box-shadow: 0 2px 8px rgba(0,0,0,.15);
     }
 
-    <!-- Panel derecho: fotos -->
-<aside id="rightbar">
-  <h3 style="margin:8px 0 10px;">Galería de Basurales</h3>
-
-  <div class="card">
-    <img src="img/BM.jpeg" alt="Basural BM">
-    <div class="caption">Basural BM</div>
-  </div>
-
-  <div class="card">
-    <img src="img/JUNQUILLAR.jpeg" alt="Basural Junquillar">
-    <div class="caption">Basural Junquillar</div>
-  </div>
-</aside>
+    /* Panel derecho (fotos) */
+    #rightbar{
+      position: fixed;
+      top: var(--topbar-h); right: 0; bottom: 0; width: var(--rightbar-w);
+      background: var(--panel); overflow: auto; padding: 14px;
+      border-left: 1px solid #d0d7de; z-index: 1001;
+      transform: translateX(0); transition: transform .25s ease;
+    }
+    body.right-hidden #rightbar{ transform: translateX(100%); }
+    body.right-hidden #toggleRight{ right: 14px; }
 
     /* Contenedor del mapa */
     #map{
@@ -124,7 +120,6 @@
         <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#e11d48;border:1px solid #991b1b;"></span>
         <span>Punto de basural</span>
       </div>
-      <!-- Agrega más ítems si tienes varias capas -->
     </div>
 
     <div class="section">
@@ -141,16 +136,18 @@
   <!-- Botón para abrir/cerrar panel de fotos -->
   <button id="toggleRight" title="Mostrar/Ocultar fotos">📷 Fotos</button>
 
-  <!-- Panel derecho: fotos (puedes reemplazar rutas y textos) -->
+  <!-- Panel derecho: fotos (usa tus imágenes) -->
   <aside id="rightbar">
-    <h3 style="margin:8px 0 10px;">Galería</h3>
+    <h3 style="margin:8px 0 10px;">Galería de Basurales</h3>
+
     <div class="card">
-      <img src="img/foto1.jpg" alt="Foto 1" onerror="this.style.display='none'">
-      <div class="caption">Ejemplo 1 — reemplaza por tu imagen en <code>img/</code>.</div>
+      <img src="img/BM.jpeg" alt="Basural BM" onerror="this.style.display='none'">
+      <div class="caption">Basural BM</div>
     </div>
+
     <div class="card">
-      <img src="img/foto2.jpg" alt="Foto 2" onerror="this.style.display='none'">
-      <div class="caption">Ejemplo 2 — agrega más tarjetas según necesites.</div>
+      <img src="img/JUNQUILLAR.jpeg" alt="Basural Junquillar" onerror="this.style.display='none'">
+      <div class="caption">Basural Junquillar</div>
     </div>
   </aside>
 
@@ -163,7 +160,7 @@
     const map = L.map('map', { zoomControl: true }).setView([-36.8, -73.0], 11);
 
     // 2) Capa base OSM
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 20,
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
@@ -189,55 +186,8 @@
       .then(data => {
         geoLayer = L.geoJSON(data, {
           pointToLayer: (feature, latlng) => {
-            // estilo de puntos (ajusta colores/tamaño a tu gusto)
+            // estilo de puntos
             return L.circleMarker(latlng, {
               radius: 6,
-              fillColor: '#e11d48',
-              color: '#991b1b',
-              weight: 1,
-              opacity: 1,
-              fillOpacity: 0.85
-            });
-          },
-          onEachFeature: function (feature, layer) {
-            layer.bindPopup(popupFromProps(feature.properties));
-          },
-          style: function(){
-            // estilo de polígonos/líneas si las hubiera
-            return { color: '#e11d48', weight: 2, fillOpacity: 0.2 };
-          }
-        }).addTo(map);
-
-        // Ajustar extensión al cargar
-        try {
-          const b = geoLayer.getBounds();
-          if (b.isValid()) map.fitBounds(b, { padding: [20,20] });
-        } catch(e){ /* no-op */ }
-      })
-      .catch(err => {
-        console.error(err);
-        alert('No se pudo cargar BASURALES.geojson. Revisa el nombre/ubicación del archivo.');
-      });
-
-    // 5) Botón "Enfocar capa"
-    document.getElementById('fitBtn').addEventListener('click', ()=>{
-      if(geoLayer){
-        const b = geoLayer.getBounds();
-        if (b && b.isValid()) map.fitBounds(b, { padding: [20,20] });
-      }
-    });
-
-    // 6) Mostrar/ocultar panel derecho (fotos)
-    document.getElementById('toggleRight').addEventListener('click', ()=>{
-      document.body.classList.toggle('right-hidden');
-      // Disparar un resize para que Leaflet recalibre el mapa al cambiar el layout
-      setTimeout(()=>{ map.invalidateSize(); }, 260);
-    });
-
-    // 7) Recalibrar mapa si cambia el tamaño de ventana
-    window.addEventListener('resize', ()=>{ map.invalidateSize(); });
-  </script>
-</body>
-</html>
 
 
