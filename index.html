@@ -45,15 +45,6 @@
     #sidebar .section{ margin-bottom: 12px; }
     #sidebar small{ color:#6b7280; }
 
-    /* Botón para abrir/cerrar fotos */
-    #toggleRight{
-      position: fixed; top: calc(var(--topbar-h) + 10px);
-      right: calc(var(--rightbar-w) + 14px);
-      z-index: 1003; border: 0; padding: 8px 12px; border-radius: 8px;
-      background: #3498db; color:#fff; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,.15);
-    }
-
     /* Panel derecho (fotos) */
     #rightbar{
       position: fixed;
@@ -63,7 +54,6 @@
       transform: translateX(0); transition: transform .25s ease;
     }
     body.right-hidden #rightbar{ transform: translateX(100%); }
-    body.right-hidden #toggleRight{ right: 14px; }
 
     /* Contenedor del mapa */
     #map{
@@ -124,27 +114,25 @@
 
     <div class="section">
       <h3>Controles</h3>
-      <p>
+      <p style="display:flex; gap:8px; flex-wrap:wrap;">
         <button id="fitBtn" style="padding:6px 10px;border-radius:8px;border:1px solid #d0d7de;background:#fff;cursor:pointer;">
           Enfocar capa
+        </button>
+        <button id="toggleRight" style="padding:6px 10px;border-radius:8px;border:1px solid #d0d7de;background:#fff;cursor:pointer;">
+          📷 Fotos
         </button>
       </p>
       <small>Tip: “Enfocar capa” ajusta el zoom a la extensión del GeoJSON.</small>
     </div>
   </aside>
 
-  <!-- Botón para abrir/cerrar panel de fotos -->
-  <button id="toggleRight" title="Mostrar/Ocultar fotos">📷 Fotos</button>
-
   <!-- Panel derecho: solo tus fotos -->
   <aside id="rightbar">
     <h3 style="margin:8px 0 10px;">Galería de Basurales</h3>
-
     <div class="card">
       <img src="img/BM.jpeg" alt="Basural BM" onerror="this.style.display='none'">
       <div class="caption">Basural BM</div>
     </div>
-
     <div class="card">
       <img src="img/JUNQUILLAR.jpeg" alt="Basural Junquillar" onerror="this.style.display='none'">
       <div class="caption">Basural Junquillar</div>
@@ -157,28 +145,27 @@
   <!-- Lógica del visor -->
   <script>
     // 1) Inicializar mapa
-const map = L.map('map', { zoomControl: true }).setView([-36.8, -73.0], 11);
+    const map = L.map('map', { zoomControl: true }).setView([-36.8, -73.0], 11);
 
-// 2) Capas base
-const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 20,
-  attribution: '&copy; OpenStreetMap'
-}).addTo(map); // añadimos OSM al inicio
+    // 2) Capas base + control de capas
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 20,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(map); // capa base inicial
 
-const satelite = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {
-    maxZoom: 20,
-    attribution: 'Tiles © Esri &mdash; Source: Esri, USGS, NOAA'
-  }
-);
+    const satelite = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        maxZoom: 20,
+        attribution: 'Tiles © Esri — Source: Esri, USGS, NOAA'
+      }
+    );
 
-// 3) Control de capas (arriba a la derecha)
-L.control.layers(
-  { "OpenStreetMap": osm, "Satélite": satelite }, // capas base
-  {}                                              // aquí podrías poner overlays
-).addTo(map);
-    
+    L.control.layers(
+      { "OpenStreetMap": osm, "Satélite": satelite }, // bases
+      {}                                              // overlays (vacío por ahora)
+    ).addTo(map);
+
     // 3) Utilidad: popup con todos los atributos
     function popupFromProps(props){
       if(!props) return '<em>Sin atributos</em>';
@@ -217,7 +204,7 @@ L.control.layers(
           }
         }).addTo(map);
 
-        // Ajustar extensión al cargar
+        // 4.1) Ajustar extensión al cargar
         try {
           const b = geoLayer.getBounds();
           if (b.isValid()) map.fitBounds(b, { padding: [20,20] });
@@ -239,6 +226,7 @@ L.control.layers(
     // 6) Mostrar/ocultar panel derecho (fotos)
     document.getElementById('toggleRight').addEventListener('click', ()=>{
       document.body.classList.toggle('right-hidden');
+      // Recalibrar el mapa al cambiar el layout
       setTimeout(()=>{ map.invalidateSize(); }, 260);
     });
 
