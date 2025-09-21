@@ -136,7 +136,7 @@
   <!-- Botón para abrir/cerrar panel de fotos -->
   <button id="toggleRight" title="Mostrar/Ocultar fotos">📷 Fotos</button>
 
-  <!-- Panel derecho: fotos (usa tus imágenes) -->
+  <!-- Panel derecho: solo tus fotos -->
   <aside id="rightbar">
     <h3 style="margin:8px 0 10px;">Galería de Basurales</h3>
 
@@ -160,12 +160,12 @@
     const map = L.map('map', { zoomControl: true }).setView([-36.8, -73.0], 11);
 
     // 2) Capa base OSM
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 20,
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
-    // 3) Utilidad: crear HTML de popup con todos los atributos
+    // 3) Utilidad: popup con todos los atributos
     function popupFromProps(props){
       if(!props) return '<em>Sin atributos</em>';
       const rows = Object.keys(props).map(k=>{
@@ -176,7 +176,7 @@
       return `<table class="attr-table">${rows}</table>`;
     }
 
-    // 4) Cargar el GeoJSON exportado desde QGIS
+    // 4) Cargar SOLO la capa BASURALES.geojson
     let geoLayer = null;
     fetch('BASURALES.geojson')
       .then(r => {
@@ -186,8 +186,50 @@
       .then(data => {
         geoLayer = L.geoJSON(data, {
           pointToLayer: (feature, latlng) => {
-            // estilo de puntos
             return L.circleMarker(latlng, {
               radius: 6,
+              fillColor: '#e11d48',
+              color: '#991b1b',
+              weight: 1,
+              opacity: 1,
+              fillOpacity: 0.85
+            });
+          },
+          onEachFeature: function (feature, layer) {
+            layer.bindPopup(popupFromProps(feature.properties));
+          },
+          style: function(){
+            return { color: '#e11d48', weight: 2, fillOpacity: 0.2 };
+          }
+        }).addTo(map);
 
+        // Ajustar extensión al cargar
+        try {
+          const b = geoLayer.getBounds();
+          if (b.isValid()) map.fitBounds(b, { padding: [20,20] });
+        } catch(e){ /* no-op */ }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('No se pudo cargar BASURALES.geojson. Revisa el nombre/ubicación del archivo.');
+      });
 
+    // 5) Botón "Enfocar capa"
+    document.getElementById('fitBtn').addEventListener('click', ()=>{
+      if(geoLayer){
+        const b = geoLayer.getBounds();
+        if (b && b.isValid()) map.fitBounds(b, { padding: [20,20] });
+      }
+    });
+
+    // 6) Mostrar/ocultar panel derecho (fotos)
+    document.getElementById('toggleRight').addEventListener('click', ()=>{
+      document.body.classList.toggle('right-hidden');
+      setTimeout(()=>{ map.invalidateSize(); }, 260);
+    });
+
+    // 7) Recalibrar mapa si cambia el tamaño de ventana
+    window.addEventListener('resize', ()=>{ map.invalidateSize(); });
+  </script>
+</body>
+</html>
